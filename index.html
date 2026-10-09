@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="theme-color" content="#1b4f9c">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <title>Kassa</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -109,7 +109,7 @@ const o={no:next(),t:Date.now(),items,sum:sum()};
 const L=JSON.parse(localStorage.orders||"[]");L.push(o);localStorage.orders=JSON.stringify(L);
 chop(o);cart={};draw();
 };
-if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js");
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
 draw();
 </script>
 </body>
