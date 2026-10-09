@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#1b4f9c">
+<link rel="manifest" href="/manifest.json">
+<title>Kassa</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#e9eef5;color:#14213d;user-select:none}
+#app{display:flex;flex-direction:column;height:100dvh}
+#tabs{display:flex;gap:8px;padding:8px;overflow-x:auto;background:#1b4f9c}
+.tab{flex:none;padding:12px 18px;border:0;border-radius:22px;font-size:17px;font-weight:700;background:#ffffff33;color:#fff}
+.tab.on{background:#fff;color:#1b4f9c}
+#grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;align-content:start}
+.dish{position:relative;min-height:88px;border:0;border-radius:10px;background:#fff;box-shadow:0 2px 0 #14213d26;font-size:20px;font-weight:800;padding:12px;text-align:left;color:#14213d}
+.dish small{display:block;margin-top:6px;font-size:15px;font-weight:500;color:#5b6b85}
+.dish:active{background:#dbe7f7}
+.badge{position:absolute;top:8px;right:8px;min-width:32px;height:32px;border-radius:16px;background:#f2a900;color:#14213d;font-style:normal;font-size:18px;font-weight:800;line-height:32px;text-align:center}
+#cart{background:#fff;border-top:3px solid #1b4f9c;padding:8px 10px calc(10px + env(safe-area-inset-bottom))}
+#lines{max-height:26vh;overflow-y:auto}
+.ln{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e3e8f0;font-size:18px}
+.ln b{flex:1}
+.ln button{width:46px;height:46px;border:0;border-radius:10px;background:#e9eef5;font-size:26px;font-weight:700;color:#14213d}
+.q{min-width:26px;text-align:center;font-weight:800}
+.s{min-width:88px;text-align:right}
+#bar{display:flex;gap:8px;margin-top:8px;align-items:center}
+#tot{flex:1;font-size:21px;font-weight:800}
+#clr{height:58px;padding:0 14px;border:0;border-radius:12px;background:#e9eef5;font-size:16px;font-weight:700;color:#14213d}
+#ok{height:58px;padding:0 36px;border:0;border-radius:14px;background:#1e7a46;color:#fff;font-size:26px;font-weight:800}
+#ok:disabled{background:#a5c4b2}
+#pr{display:none}
+@media print{body>#app{display:none}#pr{display:block;white-space:pre;font:14px monospace}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="tabs"></div>
+<div id="grid"></div>
+<div id="cart">
+<div id="lines"></div>
+<div id="bar"><div id="tot"></div><button id="clr">Tozalash</button><button id="ok">OK</button></div>
+</div>
+</div>
+<pre id="pr"></pre>
+<script>
+const CFG={nom:"MILLIY TAOMLAR OSHXONASI",W:48};
+const MENU={
+"Osh":[["Osh",45000],["Osh (yarim)",25000],["Dimlama",42000],["Kabob",15000]],
+"Sho'rva":[["Lag'mon",30000],["Sho'rva",28000],["Mastava",25000],["Mampar",27000]],
+"Salat":[["Achichuk",10000],["Svej",12000],["Vinegret",12000]],
+"Ichimlik":[["Choy",5000],["Kompot",8000],["Cola",10000],["Suv",4000]],
+"Non":[["Non",4000],["Somsa",8000],["Manti",30000]]
+};
+let cat=Object.keys(MENU)[0],cart={};
+const $=i=>document.getElementById(i);
+const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ");
+const sum=()=>Object.values(cart).reduce((a,x)=>a+x.p*x.q,0);
+function draw(){
+const st=$("grid").scrollTop;
+$("tabs").innerHTML=Object.keys(MENU).map(c=>`<button class="tab${c===cat?" on":""}" data-c="${c}">${c}</button>`).join("");
+$("grid").innerHTML=MENU[cat].map(([n,p])=>`<button class="dish" data-n="${n}" data-p="${p}">${n}<small>${fmt(p)}</small>${cart[n]?`<i class="badge">${cart[n].q}</i>`:""}</button>`).join("");
+$("grid").scrollTop=st;
+$("lines").innerHTML=Object.entries(cart).map(([n,x])=>`<div class="ln"><b>${n}</b><button data-m="${n}">-</button><span class="q">${x.q}</span><button data-a="${n}">+</button><span class="s">${fmt(x.p*x.q)}</span></div>`).join("");
+$("tot").textContent="JAMI: "+fmt(sum())+" so'm";
+$("ok").disabled=!sum();
+}
+document.addEventListener("click",e=>{
+const t=e.target.closest("button");if(!t)return;
+const d=t.dataset;
+if(d.c)cat=d.c;
+else if(d.n){(cart[d.n]=cart[d.n]||{p:+d.p,q:0}).q++}
+else if(d.a)cart[d.a].q++;
+else if(d.m){if(--cart[d.m].q<1)delete cart[d.m]}
+else return;
+draw();
+});
+$("clr").onclick=()=>{if(sum()&&confirm("Savat tozalansinmi?")){cart={};draw()}};
+function next(){
+const d=new Date().toLocaleDateString("sv-SE"),s=JSON.parse(localStorage.seq||"{}");
+const n=s.d===d?s.n+1:1;
+localStorage.seq=JSON.stringify({d,n});
+return n;
+}
+function rows(o){
+const W=CFG.W,l=(a,b)=>a+" ".repeat(Math.max(1,W-a.length-b.length))+b,d=new Date(o.t),
+tm=d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}),
+ln="-".repeat(W);
+return [[1,16,CFG.nom],[1,48,"CHEK "+o.no],[1,0,tm],[0,0,ln],
+...o.items.map(x=>[0,16,l(x.n,"x"+x.q)]),
+[0,0,ln],[0,16,l("JAMI:",fmt(o.sum)+" so'm")]];
+}
+function chop(o){
+const r=rows(o),b=[27,64],e=new TextEncoder();
+r.forEach(([a,m,t])=>b.push(27,97,a,27,33,m,...e.encode(t),10));
+b.push(27,100,4,29,86,66,0);
+if(/android/i.test(navigator.userAgent)){
+location.href="intent:base64,"+btoa(String.fromCharCode(...b))+"#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+return;
+}
+$("pr").textContent=r.map(x=>x[2]).join("\n");
+setTimeout(()=>window.print(),50);
+}
+$("ok").onclick=()=>{
+const items=Object.entries(cart).map(([n,x])=>({n,q:x.q,p:x.p}));
+if(!items.length)return;
+const o={no:next(),t:Date.now(),items,sum:sum()};
+const L=JSON.parse(localStorage.orders||"[]");L.push(o);localStorage.orders=JSON.stringify(L);
+chop(o);cart={};draw();
+};
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js");
+draw();
+</script>
+</body>
+</html>
